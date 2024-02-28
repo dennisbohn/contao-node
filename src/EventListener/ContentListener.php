@@ -52,7 +52,7 @@ class ContentListener
                 if (Input::get('ptable') === 'tl_content') {
                     $nodeId = $this->findNodeIdByContentId(Input::get('pid'));
                 } else {
-                    $nodeId = Input::get('pid');
+                    $nodeId = $dc->id;
                 }
                 break;
 
