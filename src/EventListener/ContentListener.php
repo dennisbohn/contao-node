@@ -32,24 +32,25 @@ class ContentListener
             case 'edit':
             case 'delete':
             case 'show':
-                $nodeId = $this->db->fetchOne('SELECT pid FROM tl_content WHERE id=? AND ptable=?', [$dc->id, 'tl_node']);
+            case 'copy':
+            case 'copyAll':
+            case 'cut':
+            case 'cutAll':
+                $nodeId = $this->findNodeIdByContentId($dc->id);
                 break;
 
             case 'paste':
                 if ('create' === Input::get('mode')) {
                     $nodeId = $dc->id;
                 } else {
-                    $nodeId = $this->db->fetchOne('SELECT pid FROM tl_content WHERE id=? AND ptable=?', [$dc->id, 'tl_node']);
+                    $nodeId = $this->findNodeIdByContentId($dc->id);
                 }
                 break;
 
             case 'create':
-            case 'copy':
-            case 'copyAll':
-            case 'cut':
-            case 'cutAll':
-                if (1 === (int) Input::get('mode')) {
-                    $nodeId = $this->db->fetchOne('SELECT pid FROM tl_content WHERE id=? AND ptable=?', [Input::get('pid'), 'tl_node']);
+                // Nested element
+                if (Input::get('ptable') === 'tl_content') {
+                    $nodeId = $this->findNodeIdByContentId(Input::get('pid'));
                 } else {
                     $nodeId = Input::get('pid');
                 }
@@ -58,7 +59,10 @@ class ContentListener
             default:
                 // Ajax requests such as toggle
                 if (Input::get('field') && ($id = Input::get('cid') ?: Input::get('id'))) {
-                    $nodeId = $this->db->fetchOne('SELECT pid FROM tl_content WHERE id=? AND ptable=?', [$id, 'tl_node']);
+                    $nodeId = $this->findNodeIdByContentId($id);
+                    // Nested element
+                } else if (Input::get('ptable') === 'tl_content') {
+                    $nodeId = $this->findNodeIdByContentId($dc->id);
                 } else {
                     $nodeId = $dc->id;
                 }
@@ -116,5 +120,21 @@ class ContentListener
         if (!$this->permissionChecker->isUserAllowedNode($nodeId)) {
             throw new AccessDeniedException(sprintf('The user is not allowed to manage the content of node ID %s', $nodeId));
         }
+    }
+
+    /**
+     * Find node id by content id.
+     */
+    private function findNodeIdByContentId($contentId): int
+    {
+        $pid = $contentId;
+        $ptable = 'tl_content';
+
+        // Recursive node id finder
+        while ($ptable === 'tl_content') {
+            list($pid, $ptable) = $this->db->fetchNumeric('SELECT pid, ptable FROM tl_content WHERE id=?', [$pid]);
+        }
+
+        return $pid;
     }
 }
