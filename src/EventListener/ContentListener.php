@@ -60,7 +60,7 @@ class ContentListener
                 // Ajax requests such as toggle
                 if (Input::get('field') && ($id = Input::get('cid') ?: Input::get('id'))) {
                     $nodeId = $this->findNodeIdByContentId($id);
-                    // Nested element
+                // Nested element
                 } else if (Input::get('ptable') === 'tl_content') {
                     $nodeId = $this->findNodeIdByContentId($dc->id);
                 } else {
